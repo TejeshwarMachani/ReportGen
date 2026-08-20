@@ -1,0 +1,25 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+alembic
+celery
+redis
+boto3
+python-multipart
+python-dotenv
+reportlab
+python-docx
+Pillow
+PyJWT
+bcrypt
+pandas
+numpy
+psycopg2-binary
+
+# Development dependencies
+pytest
+pytest-asyncio
+pytest-cov
+httpx
+ruff
+mypy

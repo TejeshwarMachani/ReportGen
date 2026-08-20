@@ -1,0 +1,136 @@
+# Dependabot configuration for automated dependency updates
+version: 2
+updates:
+  # Backend Python dependencies
+  - package-ecosystem: "pip"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    labels:
+      - "backend"
+      - "dependencies"
+    commit-message:
+      prefix: "backend(deps)"
+    groups:
+      dev-dependencies:
+        patterns:
+          - "pytest*"
+          - "ruff*"
+          - "mypy*"
+          - "black*"
+      fastapi-ecosystem:
+        patterns:
+          - "fastapi*"
+          - "uvicorn*"
+          - "pydantic*"
+          - "starlette*"
+      database:
+        patterns:
+          - "sqlalchemy*"
+          - "alembic*"
+          - "psycopg*"
+      data-science:
+        patterns:
+          - "pandas*"
+          - "numpy*"
+      security:
+        patterns:
+          - "bcrypt*"
+          - "PyJWT*"
+          - "cryptography*"
+
+  # Frontend npm dependencies
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    labels:
+      - "frontend"
+      - "dependencies"
+    commit-message:
+      prefix: "frontend(deps)"
+    groups:
+      react-ecosystem:
+        patterns:
+          - "react*"
+          - "@types/react*"
+          - "react-dom*"
+          - "react-router*"
+      build-tools:
+        patterns:
+          - "vite*"
+          - "@vitejs/*"
+          - "typescript*"
+          - "eslint*"
+          - "tailwindcss*"
+          - "postcss*"
+      ui-components:
+        patterns:
+          - "recharts*"
+          - "lucide-react*"
+          - "clsx*"
+          - "tailwind-merge*"
+          - "class-variance-authority*"
+      state-management:
+        patterns:
+          - "zustand*"
+          - "@tanstack/react-query*"
+      forms:
+        patterns:
+          - "react-hook-form*"
+          - "@hookform/resolvers*"
+          - "zod*"
+      utils:
+        patterns:
+          - "axios*"
+          - "date-fns*"
+          - "react-hot-toast*"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "github-actions"
+      - "dependencies"
+    commit-message:
+      prefix: "ci(deps)"
+
+  # Docker base images
+  - package-ecosystem: "docker"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "docker"
+      - "backend"
+      - "dependencies"
+    commit-message:
+      prefix: "backend(docker)"
+
+  - package-ecosystem: "docker"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "docker"
+      - "frontend"
+      - "dependencies"
+    commit-message:
+      prefix: "frontend(docker)"

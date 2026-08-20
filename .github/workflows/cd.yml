@@ -1,0 +1,83 @@
+name: CD
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+jobs:
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
+    environment: staging
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to staging server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          script: |
+            cd /opt/reportgen
+            git pull origin main
+            docker-compose -f docker-compose.prod.yml --env-file backend/.env.prod pull
+            docker-compose -f docker-compose.prod.yml --env-file backend/.env.prod up -d --build
+            # Run migrations
+            docker-compose -f docker-compose.prod.yml --env-file backend/.env.prod exec -T backend alembic upgrade head
+
+      - name: Health check
+        run: |
+          sleep 30
+          curl -f https://staging.your-domain.com/health || exit 1
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production'
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to production server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.PRODUCTION_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          script: |
+            cd /opt/reportgen
+            git pull origin main
+            docker-compose -f docker-compose.prod.yml --env-file backend/.env.prod pull
+            docker-compose -f docker-compose.prod.yml --env-file backend/.env.prod up -d --build
+            # Run migrations
+            docker-compose -f docker-compose.prod.yml --env-file backend/.env.prod exec -T backend alembic upgrade head
+
+      - name: Health check
+        run: |
+          sleep 30
+          curl -f https://your-domain.com/health || exit 1
+
+      - name: Notify deployment
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "Deployment successful!"
+            # Add Slack/Discord notification here if desired
+          else
+            echo "Deployment failed!"
+            # Add alerting here
+          fi
