@@ -35,19 +35,16 @@ SECURE_HEADERS = {
 app = FastAPI(title="AI Business Report Generation API", version="1.0.0")
 
 # CORS middleware
-# Swap ["*"] for production domains before deployment, e.g.:
-
-# allow_origins=["https://app.example.com", "https://api.example.com"]
-
-# In production, set these via env var:
-#   ALLOWED_HOSTS="https://app.example.com,https://api.example.com"
-# and replace the line below with:
-#   allow_origins=os.getenv("ALLOWED_HOSTS", "https://app.example.com,https://api.example.com").split(",")
-
+# Origins come from the ALLOWED_HOSTS env var (comma-separated), with a
+# dev default that matches local development. In production set
+#   ALLOWED_HOSTS="https://your-frontend.onrender.com,https://your-api.onrender.com"
+# Note: allow_credentials=True with "*" is rejected by browsers, so we only
+# use "*" when no explicit origins are configured and credentials are off.
+_allow_origins = os.getenv("ALLOWED_HOSTS", "")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
-    allow_credentials=True,
+    allow_origins=_allow_origins.split(",") if _allow_origins else ["*"],
+    allow_credentials=bool(_allow_origins),
     allow_methods=["*"],
     allow_headers=["*"],
 )

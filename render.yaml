@@ -29,17 +29,17 @@ services:
   - name: api
     type: web
     runtime: docker
-    repo: https://github.com/USERNAME/reportgen          # ponytail: set to your repo URL
+    repo: https://github.com/TejeshwarMachani/ReportGen          # ponytail: set to your repo URL
     branch: main                                          # ponytail: or staging; omit to use default branch
     plan: starter                                         # 512MB RAM, 0.5 CPU. Reports/PDFs are RAM-hungry: bump to standard if OOM-killed
     region: oregon
-    dockerfilePath: ./backend/Dockerfile.prod
-    dockerContext: ./backend
+    dockerfilePath: backend/Dockerfile
+    dockerContext: backend
     healthCheckPath: /health
-    # public access disabled — the frontend (static) is the only public entrypoint and the api
-    # is reached over internal networking. Comment out to expose https://api.onrender.com directly.
-    # ponytail: if you ever want api.onrender.com public, uncomment and instead hard-code a real
-    #           origin list in backend/app/main.py (CORS with allow_credentials=True + "*" is rejected by browsers).
+    # Run migrations before each deploy sends traffic.
+    preDeployCommand: alembic upgrade head
+    # The api is public so the static frontend can reach it across origins.
+    # (Comment out renderSubdomainPolicy only if you add a Proxy Integration.)
     # renderSubdomainPolicy: disabled
     envVars:
       - key: DATABASE_URL
@@ -87,12 +87,12 @@ services:
   - name: worker
     type: worker
     runtime: docker
-    repo: https://github.com/USERNAME/reportgen
+    repo: https://github.com/TejeshwarMachani/ReportGen
     branch: main
     plan: starter
     region: oregon
-    dockerfilePath: ./backend/Dockerfile.prod
-    dockerContext: ./backend
+    dockerfilePath: backend/Dockerfile
+    dockerContext: backend
     # dockerCommand overrides the Dockerfile CMD (gunicorn) with the Celery worker.
     # concurrency 2 keeps RAM under the 512MB starter limit; raise to 4 on standard.
     dockerCommand: celery -A app.core.celery_app worker --loglevel=info --concurrency=2
@@ -108,9 +108,7 @@ services:
           type: keyvalue
           property: connectionString
       - key: SECRET_KEY
-        fromDatabase:                                    # same value as api; generated once, reused
-          name: postgres
-          property: password                             # ponytail: any per-service secret; keep in sync manually is fine too
+        sync: false                                      # set the SAME value as the api service's SECRET_KEY
       - key: LLM_PROVIDER
         value: anthropic
       - key: LLM_MODEL
@@ -137,12 +135,12 @@ services:
   - name: beat
     type: worker
     runtime: docker
-    repo: https://github.com/USERNAME/reportgen
+    repo: https://github.com/TejeshwarMachani/ReportGen
     branch: main
     plan: free
     region: oregon
-    dockerfilePath: ./backend/Dockerfile.prod
-    dockerContext: ./backend
+    dockerfilePath: backend/Dockerfile
+    dockerContext: backend
     dockerCommand: celery -A app.core.celery_app beat --loglevel=info
     envVars:
       - key: DATABASE_URL
@@ -164,14 +162,17 @@ services:
   # ---------------------------------------------------------------------------
   - name: minio
     type: web
-    runtime: docker
-    repo: https://github.com/USERNAME/reportgen
-    branch: main
-    plan: starter
+    runtime: image
+    image:
+      url: docker.io/minio/minio:latest
+    commands:            # maps to the image entrypoint args: minio server /data
+      - server
+      - /data
+      - --console-address
+      - ":9001"
     region: oregon
-    dockerfilePath: ./backend/Dockerfile.prod
-    dockerContext: ./backend
-    dockerCommand: minio server /data --console-address ":9001"
+    plan: starter
+    autoDeploy: false   # unchanged image; no need to redeploy on every push
     # MinIO serves no HTTP on / — this is the standard Render workaround.
     healthCheckPath: /minio/health/live
     disk:
@@ -191,7 +192,7 @@ services:
   # ---------------------------------------------------------------------------
   - name: frontend
     type: static
-    repo: https://github.com/USERNAME/reportgen
+    repo: https://github.com/TejeshwarMachani/ReportGen
     branch: main
     buildCommand: cd frontend && npm install && npm run build
     publishPath: frontend/dist

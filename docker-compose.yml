@@ -30,7 +30,9 @@ services:
       - minio_data:/data
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
     depends_on:
       - postgres
       - redis
@@ -50,7 +52,9 @@ services:
       - "8000:8000"
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
     depends_on:
       - backend
     ports:
