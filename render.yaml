@@ -3,12 +3,12 @@
 #   New +  > Blueprint  > connect the repo. Render provisions everything below.
 #
 # Verified against this repo:
-#   backend/Dockerfile.prod        -> gunicorn app.main:app on :8000
-#   frontend/Dockerfile.prod       -> nginx serving /usr/share/nginx/html on :80 (no /api proxy upstream)
-#   backend/alembic/env.py         -> reads DATABASE_URL from env (settings.DATABASE_URL)
-#   backend/app/core/config.py     -> envs: DATABASE_URL, REDIS_URL, SECRET_KEY, S3_*, LLM_*, JWT_*, ALLOWED_HOSTS
+#   backend/Dockerfile         -> gunicorn app.main:app on :8000
+#   frontend/Dockerfile        -> nginx serving /usr/share/nginx/html on :80 (no /api proxy upstream)
+#   backend/alembic/env.py     -> reads DATABASE_URL from env (settings.DATABASE_URL)
+#   backend/app/core/config.py -> envs: DATABASE_URL, REDIS_URL, SECRET_KEY, S3_*, LLM_*, JWT_*, ALLOWED_HOSTS
 #   backend/app/core/celery_app.py -> celery -A app.core.celery_app worker/beat
-#   health/ready/live              -> GET /health returns 200 without auth
+#   health/ready/live          -> GET /health returns 200 without auth
 #
 # Services:  web(api) + worker + beat + minio (web) + frontend (static) + databases(postgres) + keyvalue(redis)
 # Costs (US, as of 2026): see "Cost notes" in RENDER_DEPLOY.md.
@@ -209,6 +209,18 @@ services:
       - key: VITE_API_BASE_URL
         value: https://api.onrender.com/api/v1   # ponytail: replace with your own api subdomain
 
+  # ---------------------------------------------------------------------------
+  # Redis — key-value store (celery broker, rate-limiting)
+  # ---------------------------------------------------------------------------
+  - name: redis
+    type: keyvalue
+    plan: starter
+    region: oregon
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: allow all (private network auth default off)
+
 databases:
   - name: postgres
     plan: starter                                          # 1GB RAM, up to 15GB disk (Postgres 16)
@@ -219,12 +231,3 @@ databases:
     # ponytail: if you need your own init.sql (docker-compose mounts ./postgres/init.sql),
     #           run it manually: `alembic upgrade head` covers the schema; custom SQL via
     #           psql from your laptop once the DB is provisioned.
-
-  - name: redis
-    type: keyvalue
-    plan: starter                                          # 128MB maxmemory, redis 7
-    region: oregon
-    maxmemoryPolicy: allkeys-lru                           # matches docker-compose (-~-maxmemory-policy allkeys-lru)
-    ipAllowList:
-      - source: 0.0.0.0/0                                  # ponytail: tighten with Render's ["private network only"] option?
-        description: allow all (private network auth default off)
