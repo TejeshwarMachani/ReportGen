@@ -74,7 +74,7 @@ async def list_audit_logs(
     # Apply pagination and ordering
     query = query.order_by(AuditLog.timestamp.desc()).offset(skip).limit(limit)
 
-    result = db.execute(query).all()
+    result = db.execute(query).scalars().all()
 
     return [
         {
@@ -109,7 +109,7 @@ async def get_audit_log(
     query = select(AuditLog).where(
         and_(AuditLog.id == log_id, AuditLog.org_id == current_user.org_id)
     )
-    log = db.execute(query).first()
+    log = db.execute(query).scalar_one_or_none()
 
     if not log:
         raise HTTPException(status_code=404, detail="Audit log entry not found")
@@ -155,7 +155,7 @@ async def cleanup_audit_logs(
                 AuditLog.timestamp < cutoff_date,
             )
         )
-    ).all()
+    ).scalars().all()
 
     for log in old_logs:
         db.delete(log)

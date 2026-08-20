@@ -186,12 +186,16 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
         if any(path.startswith(excluded) for excluded in self.exclude_paths):
             return await call_next(request)
 
-        # Check rate limit
+        # Rate limit key and matching config. The limits dict is keyed by bare
+        # path (e.g. "/api/v1/reports/generate"); the Redis key prefixes org_id.
         key = _rate_key(request)
-        limiter = get_rate_limiter()
-        allowed, remaining = await limiter._check_redis(
-            key, *self.limits.get(key, self.limits["default"])
+        path = request.url.path
+        limits_tier = next(
+            (v for k, v in self.limits.items() if path.startswith(k)),
+            self.limits["default"],
         )
+        limiter = get_rate_limiter()
+        allowed, remaining = await limiter._check_redis(key, *limits_tier)
 
         if not allowed:
             # Rate limit exceeded - return 429
@@ -201,7 +205,7 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
                 status_code=429,
                 headers={
                     "Retry-After": str(retry_after),
-                    "X-Rate-Limit-Limit": str(self.limits.get(key, self.limits["default"])[0]),
+                    "X-Rate-Limit-Limit": str(limits_tier[0]),
                     "X-Rate-Limit-Remaining": "0",
                     "X-Rate-Limit-Reset": str(int(retry_after)),
                 },
@@ -212,8 +216,7 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
 
         # Add rate limit headers for the client
-        override_headers = self.limits.get(key, self.limits["default"])
-        response.headers["X-Rate-Limit-Limit"] = str(override_headers[0])
+        response.headers["X-Rate-Limit-Limit"] = str(limits_tier[0])
         response.headers["X-Rate-Limit-Remaining"] = str(remaining) if isinstance(remaining, int) else "0"
         response.headers["X-Rate-Limit-Reset"] = str(int(time.time() + 60))
 

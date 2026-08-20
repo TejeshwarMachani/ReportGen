@@ -162,12 +162,26 @@ cp frontend/.env.example frontend/.env.prod
 
 ### 3. Deploy
 
+**Option A — Render (recommended, fully managed):**
+
+See [`RENDER_DEPLOY.md`](RENDER_DEPLOY.md) for the step-by-step guide and the one-click Blueprint (`render.yaml` is included in the repo).
+
+```bash
+# Render Blueprint: push to GitHub → Render → New Blueprint Instance → select repo
+```
+
+**Option B — Docker Compose on your own server:**
+
 ```bash
 # Using docker-compose (single server)
 docker-compose -f docker-compose.prod.yml --env-file backend/.env.prod up -d --build
 
 # Or use your preferred orchestrator (K8s, ECS, etc.)
 ```
+
+**Option C — GitHub Pages (frontend demo):**
+
+See [`GITHUB_PAGES_DEPLOY.md`](GITHUB_PAGES_DEPLOY.md). Note: GitHub Pages can only host the static frontend — the backend must run elsewhere (Render/Railway/Fly.io).
 
 ### 4. Required Production Checklist
 
@@ -287,3 +301,10 @@ This project includes a full documentation package in the root:
 | `08_VIBE_CODING_GUIDE.md` | AI-assisted development guide |
 
 Start with `08_VIBE_CODING_GUIDE.md` if using an AI coding assistant.
+
+## Deployment Guides
+
+| Guide | When to use |
+|-------|-------------|
+| `RENDER_DEPLOY.md` | Deploy frontend + backend + DB + Redis to Render (one-click Blueprint) |
+| `GITHUB_PAGES_DEPLOY.md` | Host the frontend demo on GitHub Pages (backend still needs a separate host) |

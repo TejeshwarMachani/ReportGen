@@ -52,8 +52,8 @@ interface Dataset {
   name: string
 }
 
-const TableRowSkeleton = () => (
-  <TableRow>
+const TableRowSkeleton = ({ style }: React.HTMLAttributes<HTMLTableRowElement>) => (
+  <TableRow style={style}>
     <TableCell><Skeleton className='h-4 w-3/4' /></TableCell>
     <TableCell><Skeleton className='h-5 w-24' /></TableCell>
     <TableCell><Skeleton className='h-5 w-24' /></TableCell>
@@ -86,7 +86,7 @@ export function ReportsPage() {
 
   const generateMutation = useMutation({
     mutationFn: ({ datasetId, title, type, format }: { datasetId: string; title: string; type: string; format?: string }) =>
-      api.post<{ task_id: string; dataset_id: string; status: string }>(\/reports/generate/\\, {
+      api.post<{ task_id: string; dataset_id: string; status: string }>(`/reports/generate/${datasetId}`, {
         title,
         report_type: type,
         export_format: format,
@@ -106,7 +106,7 @@ export function ReportsPage() {
 
   const exportMutation = useMutation({
     mutationFn: ({ reportId, format }: { reportId: string; format: 'pdf' | 'docx' }) =>
-      api.post<{ download_url: string }>(\/reports/\/export/\\),
+      api.post<{ download_url: string }>(`/reports/${reportId}/export/${format}`),
     onSuccess: (data) => {
       toast.success('Export ready')
       window.open(data.download_url, '_blank')
@@ -118,7 +118,7 @@ export function ReportsPage() {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.delete(\/reports/\\),
+    mutationFn: (id: string) => api.delete(`/reports/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reports'] })
       toast.success('Report deleted')
@@ -276,7 +276,7 @@ export function ReportsPage() {
               </TableHeader>
               <TableBody>
                 {[1, 2, 3, 4, 5].map((i) => (
-                  <TableRowSkeleton key={i} style={{ animationDelay: \\ms\ }} />
+                  <TableRowSkeleton key={i} style={{ animationDelay: `${i * 50}ms` }} />
                 ))}
               </TableBody>
             </Table>
@@ -302,7 +302,7 @@ export function ReportsPage() {
               </TableHeader>
               <TableBody>
                 {filteredReports.map((report, index) => (
-                  <TableRow key={report.id} className='animate-fade-in hover:bg-accent/50 transition-colors' style={{ animationDelay: \\ms\ }}>
+                  <TableRow key={report.id} className='animate-fade-in hover:bg-accent/50 transition-colors' style={{ animationDelay: `${index * 50}ms` }}>
                     <TableCell className='font-medium'>{report.title}</TableCell>
                     <TableCell>
                       <Badge variant='outline'>{report.report_type.replace('_', ' ')}</Badge>
@@ -318,7 +318,7 @@ export function ReportsPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align='end' className='animate-scale-in'>
                           <DropdownMenuItem asChild>
-                            <Link to={\/reports/\\}>
+                            <Link to={`/reports/${report.id}`}>
                               <Eye className='mr-2 h-4 w-4' />View Report
                             </Link>
                           </DropdownMenuItem>

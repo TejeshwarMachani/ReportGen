@@ -7,9 +7,19 @@ const Dialog = ({ children, open, onOpenChange, ...props }: React.ComponentProps
   <div {...props}>{open && children}</div>
 )
 
-const DialogTrigger = ({ children, ...props }: React.ComponentProps<'button'>) => (
-  <button {...props}>{children}</button>
-)
+interface DialogTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  asChild?: boolean
+}
+
+const DialogTrigger = ({ children, asChild = false, ...props }: DialogTriggerProps) => {
+  if (asChild && React.isValidElement(children)) {
+    const child = children as React.ReactElement<{ onClick?: () => void; className?: string }>
+    return React.cloneElement(child, {
+      className: cn('cursor-pointer', child.props.className),
+    })
+  }
+  return <button {...props}>{children}</button>
+}
 
 const DialogPortal = ({ children }: { children: React.ReactNode }) => (
   <div>{children}</div>

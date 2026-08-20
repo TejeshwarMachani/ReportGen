@@ -38,18 +38,18 @@ class AuditLoggingMiddleware(BaseHTTPMiddleware):
         # Generate request ID
         request_id = uuid.uuid4().hex[:12]
 
-        # Extract org_id and user_id from auth
+        # Extract org_id and user_id from the JWT bearer token
         org_id = None
         user_id = None
         try:
-            # Try to extract from auth token/headers
             auth_header = request.headers.get("Authorization", "")
             if auth_header.startswith("Bearer "):
-                # In production, would decode and validate JWT
-                # For now, set placeholder
-                org_id = "org-from-jwt-placeholder"
-                user_id = "user-from-jwt-placeholder"
+                from app.services.auth_service import AuthService
+                payload = AuthService.decode_token(auth_header[7:])
+                org_id = payload.get("org_id")
+                user_id = payload.get("user_id") or payload.get("sub")
         except Exception:
+            # Token decode failures fall back to anonymous audit entries
             pass
 
         # Get IP address
@@ -82,7 +82,7 @@ class AuditLoggingMiddleware(BaseHTTPMiddleware):
 
         # Create and persist audit log entry
         try:
-            db_gen = next(get_db())
+            db: Session = next(get_db())
             log_entry = AuditLog(
                 request_id=request_id,
                 timestamp=__import__('datetime').datetime.utcnow(),
@@ -98,12 +98,12 @@ class AuditLoggingMiddleware(BaseHTTPMiddleware):
                 description=f"{request.method} {path} -> {response.status_code}",
                 success=success,
             )
-            db_gen.add(log_entry)
-            db_gen.commit()
+            db.add(log_entry)
+            db.commit()
         except Exception:
-            # Never let audit logging break the application
-            # In production, would use a background task or async logger
-            pass
+            db.rollback()
+        finally:
+            db.close()
 
         # Add request ID to response headers for correlation
         response.headers["X-Request-ID"] = request_id

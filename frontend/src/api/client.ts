@@ -19,7 +19,7 @@ class ApiClient {
       (config: InternalAxiosRequestConfig) => {
         const accessToken = localStorage.getItem('access_token')
         if (accessToken && config.headers) {
-          config.headers.Authorization = \Bearer \\
+          config.headers.Authorization = `Bearer ${accessToken}`
         }
         return config
       },
@@ -37,7 +37,7 @@ class ApiClient {
           try {
             const newAccessToken = await this.refreshAccessToken()
             if (originalRequest.headers) {
-              originalRequest.headers.Authorization = \Bearer \\
+              originalRequest.headers.Authorization = `Bearer ${newAccessToken}`
             }
             return this.client(originalRequest)
           } catch (refreshError) {
@@ -63,7 +63,7 @@ class ApiClient {
         throw new Error('No refresh token')
       }
 
-      const response = await axios.post(\\/auth/refresh\, {
+      const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
         refresh_token: refreshToken,
       })
 

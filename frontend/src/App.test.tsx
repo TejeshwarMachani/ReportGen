@@ -1,10 +1,14 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import App from './App'
 
 describe('App', () => {
-  it('renders without crashing', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('renders the login page when unauthenticated', () => {
     render(<App />)
-    expect(screen.getByText('AI Business Report Generator')).toBeInTheDocument()
+    expect(screen.getByText(/Welcome back/)).toBeInTheDocument()
   })
 })

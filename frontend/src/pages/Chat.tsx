@@ -164,8 +164,8 @@ export function ChatPage() {
                         variant='outline'
                         size='sm'
                         className='animate-fade-in'
-                        style={{ animationDelay: \ms }}
-                        onClick={() => { setMessage(suggestion); handleSend(new Event('submit')) }}
+                        style={{ animationDelay: `${i * 50}ms` }}
+                        onClick={() => { setMessage(suggestion); handleSend({ preventDefault: () => {} } as React.FormEvent) }}
                       >
                         {suggestion}
                       </Button>
@@ -174,20 +174,20 @@ export function ChatPage() {
                 </div>
               ) : (
                 messages.map((msg, index) => (
-                  <div 
-                    key={msg.id} 
-                    className={\lex gap-3 animate-fade-in \\}
-                    style={{ animationDelay: \ms }}
+                  <div
+                    key={msg.id}
+                    className='flex gap-3 animate-fade-in'
+                    style={{ animationDelay: `${index * 50}ms` }}
                   >
-                    <div className={\lex h-10 w-10 items-center justify-center rounded-full flex-shrink-0 \\}>
+                    <div className='flex h-10 w-10 items-center justify-center rounded-full flex-shrink-0'>
                       {msg.role === 'user' ? (
                         <MessageSquare className='h-4 w-4' />
                       ) : (
                         <Database className='h-4 w-4 text-muted-foreground' />
                       )}
                     </div>
-                    <div className={\max-w-[70%] \\}>
-                      <div className={\inline-block px-4 py-2 rounded-2xl \\}>
+                    <div className='max-w-[70%]'>
+                      <div className='inline-block px-4 py-2 rounded-2xl'>
                         <p className='text-sm whitespace-pre-wrap'>{msg.content}</p>
                       </div>
                       {(msg.statements && msg.statements.length > 0) && (
@@ -219,7 +219,7 @@ export function ChatPage() {
                                 <pre>{JSON.stringify(result.data, null, 2)}</pre>
                               ) : result.summary ? (
                                 result.summary
-                              ) : null
+                              ) : null}
                             </div>
                           ))}
                         </div>

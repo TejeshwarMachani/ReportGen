@@ -6,14 +6,37 @@
 # Python
 __pycache__/
 *.pyc
+*.pyo
 .venv/
 venv/
+.pytest_cache/
+.coverage
+htmlcov/
+*.db
 
 # Node
 node_modules/
 dist/
 *.local
+coverage/
 
 # AI agent state
 .claude-flow/
 .claude/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Local dev scripts
+start_server.py
+start_server.ps1
+check_db.py
+create_tables.py

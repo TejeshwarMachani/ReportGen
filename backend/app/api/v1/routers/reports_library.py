@@ -52,7 +52,7 @@ async def reports_library(
     - date range
     - search text in title
     """
-    org_id = current_user.get("org_id")
+    org_id = current_user.org_id
     query = db.query(ReportModel).filter(ReportModel.org_id == org_id)
 
     # Apply filters
@@ -112,7 +112,7 @@ async def report_library_details(
     current_user: dict = Depends(get_current_user),
 ):
     """Get detailed information about a specific report from the library."""
-    org_id = current_user.get("org_id")
+    org_id = current_user.org_id
     report = db.query(ReportModel).filter(
         ReportModel.id == report_id,
         ReportModel.org_id == org_id

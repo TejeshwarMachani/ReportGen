@@ -59,7 +59,7 @@ class ReportService:
 
             elif pd.api.types.is_datetime64_any_dtype(series) or (
                 dtype == "object" and
-                DatasetService._looks_like_date(series.head(10))
+                ReportService._looks_like_date(series.head(10))
             ):
                 date_cols.append(col)
                 stats["date_columns"].append(col)

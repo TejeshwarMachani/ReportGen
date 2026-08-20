@@ -42,8 +42,8 @@ interface InviteRequest {
   role: string
 }
 
-const TableRowSkeleton = () => (
-  <TableRow>
+const TableRowSkeleton = ({ style }: React.HTMLAttributes<HTMLTableRowElement>) => (
+  <TableRow style={style}>
     <TableCell><Skeleton className='h-4 w-1/2' /></TableCell>
     <TableCell><Skeleton className='h-5 w-20' /></TableCell>
     <TableCell><Skeleton className='h-5 w-20' /></TableCell>
@@ -79,7 +79,7 @@ export function TeamPage() {
 
   const updateRoleMutation = useMutation({
     mutationFn: ({ userId, role }: { userId: string; role: string }) => 
-      api.patch(\/team/\/role\, { new_role: role }),
+      api.patch(`/team/${userId}/role`, { new_role: role }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['team-members'] })
       toast.success('Role updated')
@@ -91,7 +91,7 @@ export function TeamPage() {
   })
 
   const removeMutation = useMutation({
-    mutationFn: (userId: string) => api.delete(\/team/\\),
+    mutationFn: (userId: string) => api.delete(`/team/${userId}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['team-members'] })
       toast.success('User removed')
@@ -128,7 +128,7 @@ export function TeamPage() {
   }
 
   const handleRemove = (userId: string, email: string) => {
-    if (confirm(\Are you sure you want to remove \ from the organization?\)) {
+    if (confirm(`Are you sure you want to remove ${email} from the organization?`)) {
       removeMutation.mutate(userId)
     }
   }
@@ -211,7 +211,7 @@ export function TeamPage() {
               </TableHeader>
               <TableBody>
                 {[1, 2, 3, 4, 5].map((i) => (
-                  <TableRowSkeleton key={i} style={{ animationDelay: \ms }} />
+                  <TableRowSkeleton key={i} style={{ animationDelay: `${i * 50}ms` }} />
                 ))}
               </TableBody>
             </Table>
@@ -237,7 +237,7 @@ export function TeamPage() {
               </TableHeader>
               <TableBody>
                 {members?.map((member, index) => (
-                  <TableRow key={member.id} className='animate-fade-in hover:bg-accent/50 transition-colors' style={{ animationDelay: \ms }}>
+                  <TableRow key={member.id} className='animate-fade-in hover:bg-accent/50 transition-colors' style={{ animationDelay: `${index * 50}ms` }}>
                     <TableCell>
                       <div className='flex items-center gap-3'>
                         <div className='flex h-10 w-10 items-center justify-center rounded-full bg-muted'>

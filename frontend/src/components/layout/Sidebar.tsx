@@ -1,7 +1,6 @@
 'use client'
 
 import * as React from 'react'
-import Link from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { 
   LayoutDashboard, 
@@ -16,7 +15,7 @@ import {
   X,
   ChevronLeft
 } from 'lucide-react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -95,8 +94,7 @@ export function Sidebar() {
                 )}
                 title={collapsed ? item.name : undefined}
                 onClick={() => setMobileOpen(false)}
-                style={{ animationDelay: \\ms\ }}
-                className={cn('animate-fade-in', 'stagger-\')}
+                style={{ animationDelay: `${index * 50}ms` }}
               >
                 <item.icon className='h-5 w-5 flex-shrink-0 transition-transform hover:scale-110' aria-hidden='true' />
                 {!collapsed && <span className='animate-fade-in'>{item.name}</span>}

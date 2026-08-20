@@ -18,4 +18,11 @@ engine = create_engine(
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=True, bind=engine)
 
-get_db = lambda: SessionLocal()
+
+def get_db():
+    """FastAPI dependency that yields a scoped session and always closes it."""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

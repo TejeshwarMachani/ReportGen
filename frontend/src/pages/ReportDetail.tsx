@@ -42,8 +42,8 @@ interface Report {
   export_format?: string | null
 }
 
-const StatCardSkeleton = () => (
-  <Card className='animate-pulse'>
+const StatCardSkeleton = ({ style }: React.HTMLAttributes<HTMLDivElement>) => (
+  <Card className='animate-pulse' style={style}>
     <CardContent className='pt-6'>
       <Skeleton className='h-3 w-1/2' />
       <Skeleton className='h-8 w-1/4 mt-2' />
@@ -77,14 +77,14 @@ export function ReportDetailPage() {
 
   const { data: report, isLoading } = useQuery({
     queryKey: ['report', id],
-    queryFn: () => api.get<Report>(\/reports/\\),
+    queryFn: () => api.get<Report>(`/reports/${id}`),
     enabled: !!id,
   })
 
   const exportMutation = React.useCallback(
     async (format: 'pdf' | 'docx') => {
       try {
-        const result = await api.post<{ download_url: string }>(\/reports/\/export/\\)
+        const result = await api.post<{ download_url: string }>(`/reports/${id}/export/${format}`)
         toast.success('Export ready')
         window.open(result.download_url, '_blank')
       } catch (error: unknown) {
@@ -124,7 +124,7 @@ export function ReportDetailPage() {
         </div>
         <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
           {[1, 2, 3, 4].map((i) => (
-            <StatCardSkeleton key={i} style={{ animationDelay: \ms }} />
+            <StatCardSkeleton key={i} style={{ animationDelay: `${i * 50}ms` }} />
           ))}
         </div>
         <div className='space-y-6'>
@@ -151,8 +151,8 @@ export function ReportDetailPage() {
   const stats = report.computed_stats_json as Record<string, unknown> | null
   const charts = report.charts_json as unknown[] | null
 
-  const StatCard = ({ label, value }: { label: string; value: string | number }) => (
-    <Card className='hover-lift'>
+  const StatCard = ({ label, value, style }: { label: string; value: string | number; style?: React.CSSProperties }) => (
+    <Card className='hover-lift' style={style}>
       <CardContent className='pt-6'>
         <p className='text-sm text-muted-foreground'>{label}</p>
         <p className='text-2xl font-bold'>{value}</p>
@@ -161,7 +161,7 @@ export function ReportDetailPage() {
   )
 
   const renderChart = (chart: unknown) => {
-    const c = chart as { type: string; data: unknown[]; config?: Record<string, unknown> }
+    const c = chart as { type: string; data: unknown[]; config?: Record<string, string> }
     if (!c.data || c.data.length === 0) return null
 
     const config = createChartConfig({
@@ -234,7 +234,7 @@ export function ReportDetailPage() {
         <div>
           <h1 className='text-3xl font-bold tracking-tight'>{report.title}</h1>
           <p className='text-muted-foreground'>
-            {report.report_type.replace('_', ' ')} • {formatDistanceToNow(new Date(report.created_at), { addSuffix: true })}
+            {report.report_type.replace('_', ' ')} Â· {formatDistanceToNow(new Date(report.created_at), { addSuffix: true })}
           </p>
         </div>
         <div className='flex-1' />
@@ -268,7 +268,7 @@ export function ReportDetailPage() {
           {stats && Object.keys(stats).length > 0 && (
             <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
               {Object.entries(stats).map(([key, value], index) => (
-                <StatCard key={key} label={key.replace(/_/g, ' ')} value={value as string | number} style={{ animationDelay: \ms }} />
+                <StatCard key={key} label={key.replace(/_/g, ' ')} value={value as string | number} style={{ animationDelay: `${index * 50}ms` }} />
               ))}
             </div>
           )}
@@ -304,7 +304,7 @@ export function ReportDetailPage() {
               {charts && charts.length > 0 ? (
                 <div className='space-y-6'>
                   {charts.map((chart, i) => (
-                    <Card key={i} className='hover-lift' style={{ animationDelay: \ms }}>
+                    <Card key={i} className='hover-lift' style={{ animationDelay: `${i * 50}ms` }}>
                       <CardContent className='pt-6'>
                         {renderChart(chart)}
                       </CardContent>

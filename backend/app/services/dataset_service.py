@@ -129,7 +129,6 @@ class DatasetService:
         file_path = f"uploads/{org_id}/{file.filename}" if file.filename else "uploads/unknown"
 
         dataset = Dataset(
-            id="00000000-0000-0000-0000-000000000000",  # Will be DB-generated
             org_id=org_id,
             uploaded_by=uploaded_by,
             name=name,

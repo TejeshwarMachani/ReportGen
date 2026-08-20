@@ -25,8 +25,8 @@ import {
   XCircle,
   Clock,
   ChevronDown,
-  BarChart3,
-  Download
+  Download,
+  X
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import {
@@ -60,8 +60,8 @@ interface Dataset {
   schema_json?: Array<{ column: string; inferred_type: string }>
 }
 
-const TableRowSkeleton = () => (
-  <TableRow>
+const TableRowSkeleton = ({ style }: React.HTMLAttributes<HTMLTableRowElement>) => (
+  <TableRow style={style}>
     <TableCell><Skeleton className='h-4 w-3/4' /></TableCell>
     <TableCell><Skeleton className='h-4 w-1/2' /></TableCell>
     <TableCell><Skeleton className='h-4 w-16' /></TableCell>
@@ -82,11 +82,12 @@ const ForecastChart = ({ job }: { job: ForecastJob }) => {
     upper: { label: 'Upper Bound', color: 'hsl(var(--muted-foreground))' },
   })
 
+  const intervals = result.confidence_intervals || []
   const chartData = result.forecast_values.map((value, i) => ({
     period: i + 1,
     forecast: value,
-    lower: result.confidence_intervals[i]?.[0] ?? value,
-    upper: result.confidence_intervals[i]?.[1] ?? value,
+    lower: intervals[i]?.[0] ?? value,
+    upper: intervals[i]?.[1] ?? value,
   }))
 
   return (
@@ -150,7 +151,7 @@ export function ForecastsPage() {
 
   const generateMutation = useMutation({
     mutationFn: ({ datasetId, target, date, horizonPeriods, model }: { datasetId: string; target: string; date: string; horizonPeriods: number; model: string }) =>
-      api.post<{ job_id: string; status: string }>(\/forecast/generate/\\, {
+      api.post<{ job_id: string; status: string }>(`/forecast/generate/${datasetId}`, {
         target_column: target,
         date_column: date,
         horizon: horizonPeriods,
@@ -333,7 +334,7 @@ export function ForecastsPage() {
               </TableHeader>
               <TableBody>
                 {[1, 2, 3, 4, 5].map((i) => (
-                  <TableRowSkeleton key={i} style={{ animationDelay: \ms }} />
+                  <TableRowSkeleton key={i} style={{ animationDelay: `${i * 50}ms` }} />
                 ))}
               </TableBody>
             </Table>
@@ -362,7 +363,7 @@ export function ForecastsPage() {
                 </TableHeader>
                 <TableBody>
                   {filteredJobs.map((job, index) => (
-                    <TableRow key={job.id} className='animate-fade-in hover:bg-accent/50 transition-colors' style={{ animationDelay: \ms }}>
+                    <TableRow key={job.id} className='animate-fade-in hover:bg-accent/50 transition-colors' style={{ animationDelay: `${index * 50}ms` }}>
                       <TableCell className='font-medium'>{job.target_column}</TableCell>
                       <TableCell>{job.date_column}</TableCell>
                       <TableCell>{job.horizon_periods}</TableCell>
@@ -402,7 +403,7 @@ export function ForecastsPage() {
                       <div className='flex items-center justify-between'>
                         <div>
                           <CardTitle>Forecast: {selectedJob.target_column}</CardTitle>
-                          <p className='text-sm text-muted-foreground'>{selectedJob.date_column} · {selectedJob.model_type} · {selectedJob.horizon_periods} periods</p>
+                          <p className='text-sm text-muted-foreground'>{selectedJob.date_column} Â· {selectedJob.model_type} Â· {selectedJob.horizon_periods} periods</p>
                         </div>
                         <Button variant='ghost' size='icon' onClick={() => { setShowJobDetails(false); setSelectedJob(null); }}>
                           <X className='h-4 w-4' />

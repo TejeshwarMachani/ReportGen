@@ -1,0 +1,17 @@
+# Frontend .dockerignore
+node_modules
+dist
+.coverage
+coverage
+.env
+.env.*
+!.env.example
+.claude
+.claude-flow
+*.log
+.vscode
+.idea
+Dockerfile
+Dockerfile.prod
+docker-compose*.yml
+README.md

@@ -18,7 +18,7 @@ class DatasetResponse(BaseModel):
     id: str
     name: str
     source_type: str
-    schema_json: Optional[dict]
+    schema_json: Optional[list]
     row_count: int
     status: str
     created_at: str
@@ -89,7 +89,10 @@ async def get_dataset(
     current_user: User = Depends(get_current_user),
 ):
     """Get dataset detail"""
-    dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
+    dataset = db.query(Dataset).filter(
+        Dataset.id == dataset_id,
+        Dataset.org_id == current_user.org_id,
+    ).first()
     if not dataset:
         raise HTTPException(status_code=404, detail="Dataset not found")
 
@@ -111,7 +114,10 @@ async def get_dataset_preview(
     current_user: User = Depends(get_current_user),
 ):
     """Get first ~50 rows preview of dataset"""
-    dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
+    dataset = db.query(Dataset).filter(
+        Dataset.id == dataset_id,
+        Dataset.org_id == current_user.org_id,
+    ).first()
     if not dataset:
         raise HTTPException(status_code=404, detail="Dataset not found")
 
@@ -134,7 +140,10 @@ async def update_dataset(
     current_user: User = Depends(get_current_user),
 ):
     """Update dataset name or column type overrides"""
-    dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
+    dataset = db.query(Dataset).filter(
+        Dataset.id == dataset_id,
+        Dataset.org_id == current_user.org_id,
+    ).first()
     if not dataset:
         raise HTTPException(status_code=404, detail="Dataset not found")
 
@@ -169,9 +178,13 @@ async def update_dataset(
 async def delete_dataset(
     dataset_id: str,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Soft-delete a dataset (mark as error status)"""
-    dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
+    dataset = db.query(Dataset).filter(
+        Dataset.id == dataset_id,
+        Dataset.org_id == current_user.org_id,
+    ).first()
     if not dataset:
         raise HTTPException(status_code=404, detail="Dataset not found")
 

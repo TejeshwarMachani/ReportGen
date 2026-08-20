@@ -3,7 +3,12 @@
 import * as React from 'react'
 import { cn } from '@/lib/utils'
 
-const Tabs = ({ children, ...props }: React.ComponentProps<'div'>) => (
+interface TabsProps extends React.HTMLAttributes<HTMLDivElement> {
+  value?: string
+  onValueChange?: (value: string) => void
+}
+
+const Tabs = ({ children, value, onValueChange, ...props }: TabsProps) => (
   <div {...props}>{children}</div>
 )
 
@@ -35,8 +40,12 @@ const TabsTrigger = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttribut
 )
 TabsTrigger.displayName = 'TabsTrigger'
 
-const TabsContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
+interface TabsContentProps extends React.HTMLAttributes<HTMLDivElement> {
+  value: string
+}
+
+const TabsContent = React.forwardRef<HTMLDivElement, TabsContentProps>(
+  ({ className, value, ...props }, ref) => (
     <div
       ref={ref}
       className={cn(

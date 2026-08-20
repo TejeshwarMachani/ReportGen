@@ -131,7 +131,6 @@ async def generate_forecast(
     # Create forecast job record
     from sqlalchemy import func
     job = ForecastJob(
-        id="00000000-0000-0000-0000-000000000000",  # DB-generated
         org_id=org_id,
         dataset_id=dataset.id,
         created_by=current_user.id,

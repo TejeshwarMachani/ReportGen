@@ -28,7 +28,8 @@ import {
   CheckCircle,
   XCircle,
   FileText,
-  ChevronDown
+  ChevronDown,
+  MessageSquare
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
@@ -43,8 +44,8 @@ interface Dataset {
   error_message?: string | null
 }
 
-const TableRowSkeleton = () => (
-  <TableRow>
+const TableRowSkeleton = ({ style }: React.HTMLAttributes<HTMLTableRowElement>) => (
+  <TableRow style={style}>
     <TableCell><Skeleton className='h-4 w-3/4' /></TableCell>
     <TableCell><Skeleton className='h-5 w-16' /></TableCell>
     <TableCell><Skeleton className='h-4 w-20' /></TableCell>
@@ -88,7 +89,7 @@ export function DatasetsPage() {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.delete(\/datasets/\\),
+    mutationFn: (id: string) => api.delete(`/datasets/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['datasets'] })
       toast.success('Dataset deleted')
@@ -183,7 +184,7 @@ export function DatasetsPage() {
                     <div className='h-2 bg-muted rounded-full overflow-hidden'>
                       <div 
                         className='h-full bg-primary transition-all duration-300' 
-                        style={{ width: \\%\ }}
+                        style={{ width: `${uploadProgress}%` }}
                       />
                     </div>
                   </div>
@@ -229,7 +230,7 @@ export function DatasetsPage() {
               </TableHeader>
               <TableBody>
                 {[1, 2, 3, 4, 5].map((i) => (
-                  <TableRowSkeleton key={i} style={{ animationDelay: \\ms\ }} />
+                  <TableRowSkeleton key={i} style={{ animationDelay: `${i * 50}ms` }} />
                 ))}
               </TableBody>
             </Table>
@@ -256,7 +257,7 @@ export function DatasetsPage() {
               </TableHeader>
               <TableBody>
                 {filteredDatasets.map((dataset, index) => (
-                  <TableRow key={dataset.id} className='animate-fade-in hover:bg-accent/50 transition-colors' style={{ animationDelay: \\ms\ }}>
+                  <TableRow key={dataset.id} className='animate-fade-in hover:bg-accent/50 transition-colors' style={{ animationDelay: `${index * 50}ms` }}>
                     <TableCell className='font-medium'>{dataset.name}</TableCell>
                     <TableCell>
                       <Badge variant='outline'>{dataset.source_type.toUpperCase()}</Badge>
@@ -273,17 +274,17 @@ export function DatasetsPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align='end' className='animate-scale-in'>
                           <DropdownMenuItem asChild>
-                            <Link to={\/datasets/\\}>
+                            <Link to={`/datasets/${dataset.id}`}>
                               <Eye className='mr-2 h-4 w-4' />View Details
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem asChild>
-                            <Link to={\/reports/generate?dataset=\\}>
+                            <Link to={`/reports/generate?dataset=${dataset.id}`}>
                               <FileText className='mr-2 h-4 w-4' />Generate Report
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem asChild>
-                            <Link to={\/chat?dataset=\\}>
+                            <Link to={`/chat?dataset=${dataset.id}`}>
                               <MessageSquare className='mr-2 h-4 w-4' />Chat with Data
                             </Link>
                           </DropdownMenuItem>

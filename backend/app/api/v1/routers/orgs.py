@@ -23,7 +23,7 @@ async def get_current_org(
 ):
     org = db.query(Organization).filter(Organization.id == current_user.org_id).first()
     if not org:
-        raise HTTPException(status_code=status.HTTP_404, detail="Organization not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
     return {"id": org.id, "name": org.name, "plan": org.plan}
 
 

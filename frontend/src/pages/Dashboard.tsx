@@ -47,8 +47,8 @@ interface Dataset {
   created_at: string
 }
 
-const StatCardSkeleton = () => (
-  <Card className='animate-fade-in'>
+const StatCardSkeleton = ({ style }: React.HTMLAttributes<HTMLDivElement>) => (
+  <Card className='animate-fade-in' style={style}>
     <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
       <Skeleton className='h-4 w-24' />
       <Skeleton className='h-4 w-4 rounded' />
@@ -60,8 +60,8 @@ const StatCardSkeleton = () => (
   </Card>
 )
 
-const ActivityItemSkeleton = () => (
-  <div className='animate-pulse flex items-center gap-4 p-3'>
+const ActivityItemSkeleton = ({ style }: React.HTMLAttributes<HTMLDivElement>) => (
+  <div className='animate-pulse flex items-center gap-4 p-3' style={style}>
     <Skeleton className='h-10 w-10 rounded-lg' />
     <div className='flex-1 min-w-0'>
       <Skeleton className='h-4 w-3/4 rounded mb-1' />
@@ -71,8 +71,8 @@ const ActivityItemSkeleton = () => (
   </div>
 )
 
-const DatasetItemSkeleton = () => (
-  <div className='animate-pulse flex items-center gap-3 p-2'>
+const DatasetItemSkeleton = ({ style }: React.HTMLAttributes<HTMLDivElement>) => (
+  <div className='animate-pulse flex items-center gap-3 p-2' style={style}>
     <Skeleton className='h-10 w-10 rounded-lg' />
     <div className='flex-1 min-w-0'>
       <Skeleton className='h-4 w-3/4 rounded mb-1' />
@@ -139,7 +139,7 @@ export function DashboardPage() {
 
         <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
           {[1, 2, 3, 4].map((i) => (
-            <StatCardSkeleton key={i} style={{ animationDelay: \\ms\ }} />
+            <StatCardSkeleton key={i} style={{ animationDelay: `${i * 50}ms` }} />
           ))}
         </div>
 
@@ -151,7 +151,7 @@ export function DashboardPage() {
             <CardContent>
               <div className='space-y-4'>
                 {[1, 2, 3, 4, 5].map((i) => (
-                  <ActivityItemSkeleton key={i} style={{ animationDelay: \\ms\ }} />
+                  <ActivityItemSkeleton key={i} style={{ animationDelay: `${i * 50}ms` }} />
                 ))}
               </div>
             </CardContent>
@@ -165,7 +165,7 @@ export function DashboardPage() {
             <CardContent>
               <div className='space-y-3'>
                 {[1, 2, 3].map((i) => (
-                  <DatasetItemSkeleton key={i} style={{ animationDelay: \\ms\ }} />
+                  <DatasetItemSkeleton key={i} style={{ animationDelay: `${i * 50}ms` }} />
                 ))}
               </div>
             </CardContent>
@@ -243,11 +243,11 @@ export function DashboardPage() {
           <CardContent>
             <div className='space-y-4'>
               {stats?.recent_activity?.slice(0, 5).map((activity, index) => (
-                <Link 
-                  key={activity.id} 
-                  to={\/\s/\\} 
+                <Link
+                  key={activity.id}
+                  to={`/${activity.type}s`}
                   className='flex items-center gap-4 p-3 hover:bg-accent rounded-lg transition-colors animate-fade-in'
-                  style={{ animationDelay: \\ms\ }}
+                  style={{ animationDelay: `${index * 50}ms` }}
                 >
                   <div className='flex h-10 w-10 items-center justify-center rounded-lg bg-muted'>{getActivityIcon(activity.type)}</div>
                   <div className='flex-1 min-w-0'>
@@ -281,21 +281,21 @@ export function DashboardPage() {
             <div className='space-y-3'>
               {datasetsLoading ? (
                 [...Array(3)].map((_, i) => (
-                  <DatasetItemSkeleton key={i} style={{ animationDelay: \\ms\ }} />
+                  <DatasetItemSkeleton key={i} style={{ animationDelay: `${i * 50}ms` }} />
                 ))
               ) : datasets?.slice(0, 5).map((dataset, index) => (
-                <Link 
-                  key={dataset.id} 
-                  to={\/datasets/\\} 
+                <Link
+                  key={dataset.id}
+                  to={`/datasets/${dataset.id}`}
                   className='flex items-center gap-3 p-2 hover:bg-accent rounded-lg transition-colors animate-fade-in'
-                  style={{ animationDelay: \\ms\ }}
+                  style={{ animationDelay: `${index * 50}ms` }}
                 >
                   <div className='flex h-10 w-10 items-center justify-center rounded-lg bg-muted'>
                     <Database className='h-5 w-5 text-muted-foreground' />
                   </div>
                   <div className='flex-1 min-w-0'>
                     <p className='text-sm font-medium truncate'>{dataset.name}</p>
-                    <p className='text-xs text-muted-foreground'>{dataset.row_count.toLocaleString()} rows · {dataset.source_type.toUpperCase()}</p>
+                    <p className='text-xs text-muted-foreground'>{dataset.row_count.toLocaleString()} rows Â· {dataset.source_type.toUpperCase()}</p>
                   </div>
                   {getStatusBadge(dataset.status)}
                 </Link>

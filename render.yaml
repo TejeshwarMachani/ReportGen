@@ -1,0 +1,234 @@
+# Render Blueprint — ReportGen
+# One-click deploy: push this file to a GitHub repo, then
+#   New +  > Blueprint  > connect the repo. Render provisions everything below.
+#
+# Verified against this repo:
+#   backend/Dockerfile.prod        -> gunicorn app.main:app on :8000
+#   frontend/Dockerfile.prod       -> nginx serving /usr/share/nginx/html on :80 (no /api proxy upstream)
+#   backend/alembic/env.py         -> reads DATABASE_URL from env (settings.DATABASE_URL)
+#   backend/app/core/config.py     -> envs: DATABASE_URL, REDIS_URL, SECRET_KEY, S3_*, LLM_*, JWT_*, ALLOWED_HOSTS
+#   backend/app/core/celery_app.py -> celery -A app.core.celery_app worker/beat
+#   health/ready/live              -> GET /health returns 200 without auth
+#
+# Services:  web(api) + worker + beat + minio (web) + frontend (static) + databases(postgres) + keyvalue(redis)
+# Costs (US, as of 2026): see "Cost notes" in RENDER_DEPLOY.md.
+#   ~$7/mo  starter   api + worker + beat + minio
+#   ~$19/mo starter   postgres 1GB
+#   ~$7/mo  starter   redis
+#   $0      static    frontend (pro account required for blueprints + static site)
+#
+# Upgrade path (ponytail:):
+#   * swap any service to a larger `plan:` (pro, pro plus) without touching code
+#   * to drop minio, set S3_ENDPOINT_URL / S3_ACCESS_KEY / S3_SECRET_KEY to any S3-compatible
+#     object store (AWS S3, Cloudflare R2, Backblaze B2) and delete the minio service below.
+
+services:
+  # ---------------------------------------------------------------------------
+  # Backend API — FastAPI via gunicorn/uvicorn. Port 8000 (matches Dockerfile EXPOSE).
+  # ---------------------------------------------------------------------------
+  - name: api
+    type: web
+    runtime: docker
+    repo: https://github.com/USERNAME/reportgen          # ponytail: set to your repo URL
+    branch: main                                          # ponytail: or staging; omit to use default branch
+    plan: starter                                         # 512MB RAM, 0.5 CPU. Reports/PDFs are RAM-hungry: bump to standard if OOM-killed
+    region: oregon
+    dockerfilePath: ./backend/Dockerfile.prod
+    dockerContext: ./backend
+    healthCheckPath: /health
+    # public access disabled — the frontend (static) is the only public entrypoint and the api
+    # is reached over internal networking. Comment out to expose https://api.onrender.com directly.
+    # ponytail: if you ever want api.onrender.com public, uncomment and instead hard-code a real
+    #           origin list in backend/app/main.py (CORS with allow_credentials=True + "*" is rejected by browsers).
+    # renderSubdomainPolicy: disabled
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: redis
+          type: keyvalue
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "30"
+      - key: JWT_REFRESH_TOKEN_EXPIRE_DAYS
+        value: "14"
+      - key: LLM_PROVIDER
+        value: anthropic
+      - key: LLM_MODEL
+        value: claude-sonnet-4-6
+      - key: ANTHROPIC_API_KEY
+        sync: false                                      # set manually in dashboard (secret, not in repo)
+      - key: S3_ENDPOINT_URL
+        fromService:
+          name: minio
+          type: web
+          property: hostport                              # http://minio:9000 over the private network
+      - key: S3_BUCKET
+        value: reportgen-uploads
+      - key: S3_ACCESS_KEY
+        sync: false                                      # set manually (must match minio root user)
+      - key: S3_SECRET_KEY
+        sync: false                                      # set manually (must match minio root password)
+      - key: ENVIRONMENT
+        value: production
+      - key: ALLOWED_HOSTS
+        value: https://reportgen.onrender.com
+      # - key: SENTRY_DSN
+      #   sync: false                                     # optional: uncomment if you use Sentry
+
+  # ---------------------------------------------------------------------------
+  # Celery worker — report + forecast + chat background jobs. Same image as api.
+  # ---------------------------------------------------------------------------
+  - name: worker
+    type: worker
+    runtime: docker
+    repo: https://github.com/USERNAME/reportgen
+    branch: main
+    plan: starter
+    region: oregon
+    dockerfilePath: ./backend/Dockerfile.prod
+    dockerContext: ./backend
+    # dockerCommand overrides the Dockerfile CMD (gunicorn) with the Celery worker.
+    # concurrency 2 keeps RAM under the 512MB starter limit; raise to 4 on standard.
+    dockerCommand: celery -A app.core.celery_app worker --loglevel=info --concurrency=2
+    # workers don't get healthCheckPath or domains (Render limitation) — see troubleshooting
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: redis
+          type: keyvalue
+          property: connectionString
+      - key: SECRET_KEY
+        fromDatabase:                                    # same value as api; generated once, reused
+          name: postgres
+          property: password                             # ponytail: any per-service secret; keep in sync manually is fine too
+      - key: LLM_PROVIDER
+        value: anthropic
+      - key: LLM_MODEL
+        value: claude-sonnet-4-6
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: S3_ENDPOINT_URL
+        fromService:
+          name: minio
+          type: web
+          property: hostport
+      - key: S3_BUCKET
+        value: reportgen-uploads
+      - key: S3_ACCESS_KEY
+        sync: false
+      - key: S3_SECRET_KEY
+        sync: false
+      - key: ENVIRONMENT
+        value: production
+
+  # ---------------------------------------------------------------------------
+  # Celery beat — scheduled reports. Tiny; can run on free plan.
+  # ---------------------------------------------------------------------------
+  - name: beat
+    type: worker
+    runtime: docker
+    repo: https://github.com/USERNAME/reportgen
+    branch: main
+    plan: free
+    region: oregon
+    dockerfilePath: ./backend/Dockerfile.prod
+    dockerContext: ./backend
+    dockerCommand: celery -A app.core.celery_app beat --loglevel=info
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: redis
+          type: keyvalue
+          property: connectionString
+      - key: ENVIRONMENT
+        value: production
+
+  # ---------------------------------------------------------------------------
+  # MinIO — S3-compatible object storage for uploaded datasets / generated files.
+  # Render has no managed S3, so this small always-on web service with a disk is
+  # the cheapest option. Delete this service if you point S3_* at another store.
+  # ---------------------------------------------------------------------------
+  - name: minio
+    type: web
+    runtime: docker
+    repo: https://github.com/USERNAME/reportgen
+    branch: main
+    plan: starter
+    region: oregon
+    dockerfilePath: ./backend/Dockerfile.prod
+    dockerContext: ./backend
+    dockerCommand: minio server /data --console-address ":9001"
+    # MinIO serves no HTTP on / — this is the standard Render workaround.
+    healthCheckPath: /minio/health/live
+    disk:
+      name: minio-data
+      mountPath: /data
+      sizeGB: 10
+    envVars:
+      - key: MINIO_ROOT_USER
+        sync: false                                      # e.g. minioadmin (keep, and mirror into S3_ACCESS_KEY)
+      - key: MINIO_ROOT_PASSWORD
+        sync: false                                      # strong password; mirror into S3_SECRET_KEY
+
+  # ---------------------------------------------------------------------------
+  # Frontend — deploy as static site for $0. If you prefer a Docker web service,
+  # the alternative is at the bottom of RENDER_DEPLOY.md (requires the plan :/
+  # nginx branch below, and a separate disk is not needed).
+  # ---------------------------------------------------------------------------
+  - name: frontend
+    type: static
+    repo: https://github.com/USERNAME/reportgen
+    branch: main
+    buildCommand: cd frontend && npm install && npm run build
+    publishPath: frontend/dist
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: /api/*   # ponytail: with a Proxy Integration, /api goes to the api service; see RENDER_DEPLOY.md section 7
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+    envVars:
+      # Vite bakes this into the bundle at build time (VITE_API_BASE_URL in client.ts).
+      # The static site is a public client, so it must hit the api's PUBLIC URL:
+      #   -> enable the api's render subdomain (comment out renderSubdomainPolicy: disabled above),
+      #   -> then set the value below to your api URL, e.g. https://api.onrender.com/api/v1
+      #   -> or, with a Proxy Integration, https://reportgen.onrender.com/api/v1.
+      - key: VITE_API_BASE_URL
+        value: https://api.onrender.com/api/v1   # ponytail: replace with your own api subdomain
+
+databases:
+  - name: postgres
+    plan: starter                                          # 1GB RAM, up to 15GB disk (Postgres 16)
+    region: oregon
+    postgresMajorVersion: "16"
+    databaseName: reportgen
+    user: reportgen
+    # ponytail: if you need your own init.sql (docker-compose mounts ./postgres/init.sql),
+    #           run it manually: `alembic upgrade head` covers the schema; custom SQL via
+    #           psql from your laptop once the DB is provisioned.
+
+services-extra:
+  - name: redis
+    type: keyvalue
+    plan: starter                                          # 128MB maxmemory, redis 7
+    region: oregon
+    maxmemoryPolicy: allkeys-lru                           # matches docker-compose (-~-maxmemory-policy allkeys-lru)
+    ipAllowList:
+      - source: 0.0.0.0/0                                  # ponytail: tighten with Render's ["private network only"] option?
+        description: allow all (private network auth default off)

@@ -5,18 +5,19 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/api/client'
 import { toast } from 'react-hot-toast'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Separator } from '@/components/ui/separator'
-import { useAuthStore } from '@/store/authStore'
-import { 
-  User, 
-  Settings, 
-  Shield, 
-  Database, 
-  Bell, 
+import { useAuthStore, type User as AuthUser } from '@/store/authStore'
+import {
+  User,
+  Settings,
+  Shield,
+  Database,
+  Bell,
   Palette,
   Loader2,
   Save,
@@ -62,8 +63,8 @@ export function SettingsPage() {
   }, [org])
 
   const updateProfileMutation = useMutation({
-    mutationFn: (data: { full_name: string; email: string }) => 
-      api.patch('/users/me', data),
+    mutationFn: (data: { full_name: string; email: string }) =>
+      api.patch<AuthUser>('/users/me', data),
     onSuccess: (data) => {
       setUser({ ...user!, ...data })
       toast.success('Profile updated')
@@ -245,7 +246,7 @@ export function SettingsPage() {
                       </div>
                       <label className='relative inline-flex items-center cursor-pointer'>
                         <input type='checkbox' defaultChecked className='sr-only peer' />
-                        <div className='w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[\"\"] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600'></div>
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
                       </label>
                     </div>
                   ))}
@@ -269,7 +270,7 @@ export function SettingsPage() {
                     <button
                       key={t.id}
                       onClick={() => setTheme(t.id as 'light' | 'dark' | 'system')}
-                      className={\elative p-4 border rounded-lg hover:border-primary transition-colors \\}
+                      className={`relative p-4 border rounded-lg ${theme === t.id ? 'border-primary bg-accent' : 'hover:border-primary'} transition-colors`}
                     >
                       <div className='text-3xl mb-2'>
                         <t.icon className='h-8 w-8' />

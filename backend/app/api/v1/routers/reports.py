@@ -198,6 +198,31 @@ async def get_report(
     )
 
 
+@router.delete("/{report_id}", status_code=status.HTTP_200_OK)
+async def delete_report(
+    report_id: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """Delete a report by ID (org-scoped)."""
+    org_id = current_user.org_id
+    report = db.query(ReportModel).filter(
+        ReportModel.id == report_id,
+        ReportModel.org_id == org_id
+    ).first()
+
+    if not report:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Report not found or access denied"
+        )
+
+    db.delete(report)
+    db.commit()
+
+    return {"detail": "Report deleted"}
+
+
 @router.post("/{report_id}/export/{format}")
 async def export_report(
     report_id: str,

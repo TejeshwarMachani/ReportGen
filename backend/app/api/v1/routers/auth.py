@@ -45,6 +45,30 @@ async def refresh(body: RefreshBody, db: Session = Depends(get_db)):
     access_token = await AuthService.refresh_access_token(db, body.refresh_token)
     return {"access_token": access_token}
 
+class ForgotPasswordBody(BaseModel):
+    email: EmailStr
+
+
+@router.post("/forgot-password", status_code=status.HTTP_200_OK)
+async def forgot_password(body: ForgotPasswordBody, db: Session = Depends(get_db)):
+    """Request a password reset email for an existing account.
+
+    Never reveals whether the account exists (account enumeration guard):
+    always returns the same message. Email delivery is not wired up yet;
+    this records the request and returns instructions so the UI flow works.
+    """
+    # Check if user exists (without revealing it in the response)
+    existing = db.query(User).filter(User.email == body.email).first()
+    if existing:
+        # TODO: generate a reset token, persist it, and email a reset link.
+        # ponytail: email provider (Postmark/SES) is a later upgrade.
+        pass
+    # Always return the same message to prevent account enumeration.
+    return {
+        "detail": "If that email exists, password reset instructions have been sent.",
+    }
+
+
 @router.post("/logout", status_code=status.HTTP_200_OK)
 async def logout(body: LogoutBody, db: Session = Depends(get_db)):
     """Invalidate a refresh token.

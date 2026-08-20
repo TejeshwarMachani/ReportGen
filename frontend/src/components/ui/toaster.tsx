@@ -1,12 +1,11 @@
 'use client'
 
-import * as React from 'react'
-import { Toaster as HotToastToaster, toast, type ToastProps } from 'react-hot-toast'
+import { Toaster as HotToastToaster, toast } from 'react-hot-toast'
 import { cn } from '@/lib/utils'
 
 interface ToasterProps {
-  position?: ToastProps['position']
-  theme?: ToastProps['theme']
+  position?: 'top-left' | 'top-center' | 'top-right' | 'bottom-left' | 'bottom-center' | 'bottom-right'
+  theme?: 'light' | 'dark'
 }
 
 export function Toaster({ position = 'top-right', theme = 'light' }: ToasterProps) {
