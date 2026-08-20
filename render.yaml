@@ -165,11 +165,7 @@ services:
     runtime: image
     image:
       url: docker.io/minio/minio:latest
-    commands:            # maps to the image entrypoint args: minio server /data
-      - server
-      - /data
-      - --console-address
-      - ":9001"
+    startCommand: minio server /data --console-address ":9001"
     region: oregon
     plan: starter
     autoDeploy: false   # unchanged image; no need to redeploy on every push
@@ -224,7 +220,6 @@ databases:
     #           run it manually: `alembic upgrade head` covers the schema; custom SQL via
     #           psql from your laptop once the DB is provisioned.
 
-services-extra:
   - name: redis
     type: keyvalue
     plan: starter                                          # 128MB maxmemory, redis 7
