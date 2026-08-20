@@ -186,16 +186,16 @@ services:
         sync: false                                      # strong password; mirror into S3_SECRET_KEY
 
   # ---------------------------------------------------------------------------
-  # Frontend — deploy as static site for $0. If you prefer a Docker web service,
-  # the alternative is at the bottom of RENDER_DEPLOY.md (requires the plan :/
-  # nginx branch below, and a separate disk is not needed).
+  # Frontend — deploy as static site ($0). Blueprint static sites use type: web
+  # with build/publish configuration.
   # ---------------------------------------------------------------------------
   - name: frontend
-    type: static
+    type: web
     repo: https://github.com/TejeshwarMachani/ReportGen
     branch: main
+    runtime: static
     buildCommand: cd frontend && npm install && npm run build
-    publishPath: frontend/dist
+    staticPublishPath: frontend/dist
     routes:
       - type: rewrite
         source: /api/*
